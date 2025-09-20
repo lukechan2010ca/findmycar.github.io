@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Find My Car</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="app-header">
+        <h1>Find My Car</h1>
+    </header>
+    <main class="container">
+        <section class="map-section">
+            <div id="map" aria-label="Map showing current and parked location"></div>
+            <div class="map-hint" aria-hidden="true">Tip: If GPS is blocked, tap the map to set your parked spot, then press Save.</div>
+        </section>
+
+        <section class="note-section">
+            <label for="note" class="label">Notes</label>
+            <input id="note" type="text" class="input" placeholder="e.g., Level B2, Row 7, near elevator" autocomplete="off">
+        </section>
+
+        <section class="timer-section">
+            <label for="time-limit" class="label">Parking Time Limit</label>
+            <div class="timer-row">
+                <input id="time-limit" type="number" class="input timer-input" placeholder="60" min="1" max="480" value="60">
+                <span class="timer-unit">minutes</span>
+            </div>
+            <div id="timer-display" class="timer-display" hidden>
+                <div class="timer-info">
+                    <span id="timer-text">Time remaining: 45:00</span>
+                    <button id="btn-stop-timer" class="button button-danger button-small" type="button">Stop Timer</button>
+                </div>
+                <div id="timer-progress" class="timer-progress">
+                    <div id="timer-bar" class="timer-bar"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="photo-section">
+            <div class="photo-row">
+                <button id="btn-photo" class="button" type="button">Take Photo</button>
+                <input id="photo-input" type="file" accept="image/*" capture="environment" style="display:none">
+            </div>
+            <div id="photo-preview-wrapper" class="preview-wrapper" hidden>
+                <img id="photo-preview" alt="Parking spot photo preview">
+                <button id="btn-remove-photo" class="button button-secondary" type="button">Remove Photo</button>
+            </div>
+        </section>
+
+        <section class="actions">
+            <button id="btn-save" class="button button-primary" type="button">Save Location</button>
+            <button id="btn-navigate" class="button button-accent" type="button">Navigate to Car</button>
+        </section>
+
+        <section id="status" class="status" role="status" aria-live="polite"></section>
+    </main>
+
+    <script src="app.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkVXVAlkuiMgpe8CdYPC0VQRV6rcmQecs&callback=initMap"></script>
+</body>
+</html>
+
