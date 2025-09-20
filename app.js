@@ -40,18 +40,38 @@
     function writeSaved(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
     async function toDataUrl(file, maxSize = 1280) {
-        const img = new Image();
-        const reader = new FileReader();
-        const dataUrl = await new Promise((resolve, reject) => { reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
-        img.src = dataUrl;
-        await new Promise((r, j) => { img.onload = () => r(); img.onerror = j; });
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataUrl('image/jpeg', 0.8);
+        try {
+            const img = new Image();
+            const reader = new FileReader();
+            
+            // Read file as data URL
+            const dataUrl = await new Promise((resolve, reject) => { 
+                reader.onload = () => resolve(reader.result); 
+                reader.onerror = reject; 
+                reader.readAsDataURL(file); 
+            });
+            
+            // Load image to get dimensions
+            img.src = dataUrl;
+            await new Promise((resolve, reject) => { 
+                img.onload = () => resolve(); 
+                img.onerror = reject; 
+            });
+            
+            // Create canvas and resize
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Return compressed image (fixed typo: toDataURL not toDataUrl)
+            return canvas.toDataURL('image/jpeg', 0.8);
+        } catch (error) {
+            console.error('Photo processing error:', error);
+            throw new Error(`Failed to process photo: ${error.message}`);
+        }
     }
 
     // Timer functions
@@ -272,7 +292,15 @@
     // Events
     photoBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files && e.target.files[0]; if (!file) return;
+        const file = e.target.files && e.target.files[0]; 
+        if (!file) return;
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setStatus('Please select an image file');
+            return;
+        }
+        
         setStatus('Processing photo...');
         try { 
             const dataUrl = await toDataUrl(file); 
@@ -286,7 +314,10 @@
             
             setStatus('Photo saved');
         }
-        catch { setStatus('Failed to process photo.'); }
+        catch (error) { 
+            console.error('Photo processing failed:', error);
+            setStatus(`Failed to process photo: ${error.message}`);
+        }
     });
     removePhotoBtn.addEventListener('click', () => { clearPhoto(); const saved = readSaved(); if (saved) { saved.photoDataUrl = ''; writeSaved(saved); } });
     saveBtn.addEventListener('click', saveLocation);
