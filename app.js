@@ -319,6 +319,21 @@
             setStatus(`Failed to process photo: ${error.message}`);
         }
     });
+
+    // Check if camera access is available
+    function checkCameraSupport() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setStatus('Camera not supported. Please use HTTPS or a modern browser.');
+            return false;
+        }
+        return true;
+    }
+
+    // Add camera support check on load
+    if (!checkCameraSupport()) {
+        photoBtn.disabled = true;
+        photoBtn.textContent = 'Camera Not Available';
+    }
     removePhotoBtn.addEventListener('click', () => { clearPhoto(); const saved = readSaved(); if (saved) { saved.photoDataUrl = ''; writeSaved(saved); } });
     saveBtn.addEventListener('click', saveLocation);
     navigateBtn.addEventListener('click', navigateToCar);
