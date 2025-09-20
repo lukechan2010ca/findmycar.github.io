@@ -99,7 +99,12 @@
     }
 
     function startTimer() {
-        const minutes = parseInt(timeLimitInput.value) || 60;
+        const minutes = parseInt(timeLimitInput.value);
+        if (!minutes || minutes < 1) {
+            setStatus('Please enter a valid time limit (1-480 minutes)');
+            return;
+        }
+        
         timerDuration = minutes * 60;
         timerStartTime = Date.now();
         warningShown = false;
@@ -184,9 +189,14 @@
         fitBoundsIfPossible();
         parkedSetManually = false;
         
-        // Start timer when parking location is saved
-        startTimer();
-        setStatus('Parked location saved and timer started.');
+        // Start timer only if time limit is set
+        const minutes = parseInt(timeLimitInput.value);
+        if (minutes && minutes >= 1) {
+            startTimer();
+            setStatus('Parked location saved and timer started.');
+        } else {
+            setStatus('Parked location saved.');
+        }
     }
 
     async function navigateToCar() {
@@ -264,7 +274,18 @@
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files && e.target.files[0]; if (!file) return;
         setStatus('Processing photo...');
-        try { const dataUrl = await toDataUrl(file); previewImg.src = dataUrl; previewWrapper.hidden = false; setStatus(''); }
+        try { 
+            const dataUrl = await toDataUrl(file); 
+            previewImg.src = dataUrl; 
+            previewWrapper.hidden = false; 
+            
+            // Save photo immediately to localStorage
+            const saved = readSaved() || {};
+            saved.photoDataUrl = dataUrl;
+            writeSaved(saved);
+            
+            setStatus('Photo saved');
+        }
         catch { setStatus('Failed to process photo.'); }
     });
     removePhotoBtn.addEventListener('click', () => { clearPhoto(); const saved = readSaved(); if (saved) { saved.photoDataUrl = ''; writeSaved(saved); } });
