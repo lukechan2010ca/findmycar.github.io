@@ -45,14 +45,18 @@
                 <input id="photo-input" type="file" accept="image/*" capture="environment" style="display:none">
             </div>
             <div id="photo-preview-wrapper" class="preview-wrapper" hidden>
-                <img id="photo-preview" alt="Parking spot photo preview">
-                <button id="btn-remove-photo" class="button button-secondary" type="button">Remove Photo</button>
+                <img id="photo-preview" alt="">
+                <button id="btn-remove-photo" class="button button-secondary" type="button">Remove</button>
             </div>
         </section>
 
         <section class="actions">
             <button id="btn-save" class="button button-primary" type="button">Save Location</button>
             <button id="btn-navigate" class="button button-accent" type="button">Navigate to Car</button>
+        </section>
+
+        <section class="settings-section">
+            <button id="btn-clear-all" class="button button-danger" type="button">Clear All Data</button>
         </section>
 
         <section id="status" class="status" role="status" aria-live="polite"></section>

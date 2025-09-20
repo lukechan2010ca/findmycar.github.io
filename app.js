@@ -16,6 +16,7 @@
     const timerText = document.getElementById('timer-text');
     const timerBar = document.getElementById('timer-bar');
     const stopTimerBtn = document.getElementById('btn-stop-timer');
+    const clearAllBtn = document.getElementById('btn-clear-all');
 
     /** @type {google.maps.Map} */
     let map;
@@ -247,6 +248,47 @@
 
     function clearPhoto() { previewImg.src = ''; previewWrapper.hidden = true; }
 
+    function clearAllData() {
+        // Show confirmation dialog
+        if (!confirm('Are you sure you want to clear all data? This will remove your parked location, notes, photos, and timer settings.')) {
+            return;
+        }
+
+        // Stop timer if running
+        stopTimer();
+
+        // Clear localStorage
+        localStorage.removeItem(STORAGE_KEY);
+
+        // Reset form inputs
+        noteInput.value = '';
+        timeLimitInput.value = '';
+        timeLimitInput.disabled = false;
+
+        // Clear photo
+        clearPhoto();
+
+        // Remove markers from map
+        if (parkedMarker) {
+            parkedMarker.setMap(null);
+            parkedMarker = null;
+        }
+
+        // Clear directions if showing
+        if (directionsRenderer) {
+            directionsRenderer.setDirections({ routes: [] });
+        }
+
+        // Reset manual flag
+        parkedSetManually = false;
+
+        // Show success message
+        setStatus('All data cleared successfully');
+        
+        // Clear status after 3 seconds
+        setTimeout(() => setStatus(''), 3000);
+    }
+
     function hydrateFromSaved() {
         const saved = readSaved();
         if (!saved) return;
@@ -338,6 +380,7 @@
     saveBtn.addEventListener('click', saveLocation);
     navigateBtn.addEventListener('click', navigateToCar);
     stopTimerBtn.addEventListener('click', stopTimer);
+    clearAllBtn.addEventListener('click', clearAllData);
     
     // Request notification permission on load
     requestNotificationPermission();
