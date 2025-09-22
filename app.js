@@ -233,20 +233,28 @@
 
         // Attempt to open native apps on mobile
         if (isIOS) {
-            // Prefer Google Maps if installed; fallback to Apple Maps, then web
+            // iOS: try universal link first (can open Google Maps app if installed),
+            // then try Google Maps URL scheme, then Apple Maps, then web
+            const universal = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
             const gmapsUrl = `comgooglemaps://?daddr=${destLat},${destLng}&directionsmode=walking`;
             const appleUrl = `maps://?daddr=${destLat},${destLng}&dirflg=w`;
-            let opened = false;
-            const now = Date.now();
-            const openTimer = setTimeout(() => {
-                if (Date.now() - now < 1600) {
-                    // Google Maps not installed, try Apple Maps
+
+            // Open universal link first (within user gesture)
+            window.location.href = universal;
+
+            // Set a timed fallback chain in case it didn't hand off to the app
+            setTimeout(() => {
+                // Try Google Maps scheme
+                window.location.href = gmapsUrl;
+                setTimeout(() => {
+                    // Fallback to Apple Maps
                     window.location.href = appleUrl;
-                    setTimeout(() => { window.location.href = webUrl; }, 1200);
-                }
-            }, 1200);
-            // Try Google Maps
-            window.location.href = gmapsUrl;
+                    setTimeout(() => {
+                        // Final fallback to web
+                        window.location.href = universal;
+                    }, 800);
+                }, 800);
+            }, 600);
             return;
         }
 
