@@ -231,26 +231,37 @@
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isAndroid = /Android/.test(navigator.userAgent);
 
+        // Attempt to open native apps on mobile
         if (isIOS) {
+            // Prefer Google Maps if installed; fallback to Apple Maps, then web
             const gmapsUrl = `comgooglemaps://?daddr=${destLat},${destLng}&directionsmode=walking`;
             const appleUrl = `maps://?daddr=${destLat},${destLng}&dirflg=w`;
-            const start = Date.now();
-            setTimeout(() => {
-                if (Date.now() - start < 1600) {
+            let opened = false;
+            const now = Date.now();
+            const openTimer = setTimeout(() => {
+                if (Date.now() - now < 1600) {
+                    // Google Maps not installed, try Apple Maps
                     window.location.href = appleUrl;
                     setTimeout(() => { window.location.href = webUrl; }, 1200);
                 }
             }, 1200);
+            // Try Google Maps
             window.location.href = gmapsUrl;
             return;
         }
 
         if (isAndroid) {
+            // Intent to open Google Maps app directly; fallback to web
             const intentUrl = `intent://maps.google.com/maps?daddr=${destLat},${destLng}&directionsmode=walking#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-            try { window.location.href = intentUrl; } catch { window.location.href = webUrl; }
+            try {
+                window.location.href = intentUrl;
+            } catch (e) {
+                window.location.href = webUrl;
+            }
             return;
         }
 
+        // Desktop: show directions inside the embedded map as before
         let origin;
         try {
             const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
