@@ -16,7 +16,7 @@
     const timerText = document.getElementById('timer-text');
     const timerBar = document.getElementById('timer-bar');
     const stopTimerBtn = document.getElementById('btn-stop-timer');
-    const openGmapsBtn = document.getElementById('btn-open-gmaps');
+    const openGmapsLink = document.getElementById('link-open-gmaps');
     const clearAllBtn = document.getElementById('btn-clear-all');
 
     /** @type {google.maps.Map} */
@@ -246,7 +246,8 @@
         });
     }
 
-    function openInGoogleMapsApp() {
+    function openInGoogleMapsApp(e) {
+        if (e && e.preventDefault) e.preventDefault();
         const saved = readSaved();
         if (!saved || !saved.parked) { setStatus('No parked location saved yet.'); return; }
         const destLat = saved.parked.lat;
@@ -258,9 +259,8 @@
         if (isIOS) {
             const gmapsUrl = `comgooglemaps://?daddr=${destLat},${destLng}&directionsmode=walking`;
             const universal = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
-            // Single-purpose: attempt Google Maps directly; fallback to universal
-            window.location.href = gmapsUrl;
-            setTimeout(() => { window.location.href = universal; }, 800);
+            openGmapsLink.setAttribute('href', gmapsUrl);
+            setTimeout(() => { window.location.href = universal; }, 1200);
             return;
         }
 
@@ -408,7 +408,7 @@
     saveBtn.addEventListener('click', saveLocation);
     navigateBtn.addEventListener('click', navigateToCar);
     stopTimerBtn.addEventListener('click', stopTimer);
-    openGmapsBtn.addEventListener('click', openInGoogleMapsApp);
+    openGmapsLink.addEventListener('click', openInGoogleMapsApp);
     clearAllBtn.addEventListener('click', clearAllData);
     
     // Request notification permission on load
