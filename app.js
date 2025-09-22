@@ -16,6 +16,7 @@
     const timerText = document.getElementById('timer-text');
     const timerBar = document.getElementById('timer-bar');
     const stopTimerBtn = document.getElementById('btn-stop-timer');
+    const openGmapsBtn = document.getElementById('btn-open-gmaps');
     const clearAllBtn = document.getElementById('btn-clear-all');
 
     /** @type {google.maps.Map} */
@@ -224,52 +225,7 @@
         const saved = readSaved();
         if (!saved || !saved.parked) { setStatus('No parked location saved yet.'); return; }
 
-        const destLat = saved.parked.lat;
-        const destLng = saved.parked.lng;
-        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
-
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isAndroid = /Android/.test(navigator.userAgent);
-
-        // Attempt to open native apps on mobile
-        if (isIOS) {
-            // iOS: try universal link first (can open Google Maps app if installed),
-            // then try Google Maps URL scheme, then Apple Maps, then web
-            const universal = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
-            const gmapsUrl = `comgooglemaps://?daddr=${destLat},${destLng}&directionsmode=walking`;
-            const appleUrl = `maps://?daddr=${destLat},${destLng}&dirflg=w`;
-
-            // Open universal link first (within user gesture)
-            window.location.href = universal;
-
-            // Set a timed fallback chain in case it didn't hand off to the app
-            setTimeout(() => {
-                // Try Google Maps scheme
-                window.location.href = gmapsUrl;
-                setTimeout(() => {
-                    // Fallback to Apple Maps
-                    window.location.href = appleUrl;
-                    setTimeout(() => {
-                        // Final fallback to web
-                        window.location.href = universal;
-                    }, 800);
-                }, 800);
-            }, 600);
-            return;
-        }
-
-        if (isAndroid) {
-            // Intent to open Google Maps app directly; fallback to web
-            const intentUrl = `intent://maps.google.com/maps?daddr=${destLat},${destLng}&directionsmode=walking#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-            try {
-                window.location.href = intentUrl;
-            } catch (e) {
-                window.location.href = webUrl;
-            }
-            return;
-        }
-
-        // Desktop: show directions inside the embedded map as before
+        // Always show directions inside the embedded map (web app)
         let origin;
         try {
             const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
@@ -279,7 +235,7 @@
                 const p = currentMarker.getPosition(); origin = { lat: p.lat(), lng: p.lng() };
             } else { setStatus('Need your current location for directions.'); return; }
         }
-        const destination = { lat: destLat, lng: destLng };
+        const destination = { lat: saved.parked.lat, lng: saved.parked.lng };
         directionsService.route({ origin, destination, travelMode: google.maps.TravelMode.WALKING }, (result, status) => {
             if (status === 'OK' && result) {
                 directionsRenderer.setDirections(result);
@@ -288,6 +244,34 @@
                 setStatus('Could not compute route.');
             }
         });
+    }
+
+    function openInGoogleMapsApp() {
+        const saved = readSaved();
+        if (!saved || !saved.parked) { setStatus('No parked location saved yet.'); return; }
+        const destLat = saved.parked.lat;
+        const destLng = saved.parked.lng;
+
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isAndroid = /Android/.test(navigator.userAgent);
+
+        if (isIOS) {
+            const gmapsUrl = `comgooglemaps://?daddr=${destLat},${destLng}&directionsmode=walking`;
+            const universal = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
+            // Single-purpose: attempt Google Maps directly; fallback to universal
+            window.location.href = gmapsUrl;
+            setTimeout(() => { window.location.href = universal; }, 800);
+            return;
+        }
+
+        if (isAndroid) {
+            const intentUrl = `intent://maps.google.com/maps?daddr=${destLat},${destLng}&directionsmode=walking#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            try { window.location.href = intentUrl; } catch { window.location.href = `https://maps.google.com/?daddr=${destLat},${destLng}`; }
+            return;
+        }
+
+        // Desktop fallback to web
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`, '_blank');
     }
 
     function clearPhoto() { previewImg.src = ''; previewWrapper.hidden = true; }
@@ -424,6 +408,7 @@
     saveBtn.addEventListener('click', saveLocation);
     navigateBtn.addEventListener('click', navigateToCar);
     stopTimerBtn.addEventListener('click', stopTimer);
+    openGmapsBtn.addEventListener('click', openInGoogleMapsApp);
     clearAllBtn.addEventListener('click', clearAllData);
     
     // Request notification permission on load
