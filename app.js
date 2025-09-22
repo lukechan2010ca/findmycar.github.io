@@ -223,6 +223,34 @@
     async function navigateToCar() {
         const saved = readSaved();
         if (!saved || !saved.parked) { setStatus('No parked location saved yet.'); return; }
+
+        const destLat = saved.parked.lat;
+        const destLng = saved.parked.lng;
+        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
+
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isAndroid = /Android/.test(navigator.userAgent);
+
+        if (isIOS) {
+            const gmapsUrl = `comgooglemaps://?daddr=${destLat},${destLng}&directionsmode=walking`;
+            const appleUrl = `maps://?daddr=${destLat},${destLng}&dirflg=w`;
+            const start = Date.now();
+            setTimeout(() => {
+                if (Date.now() - start < 1600) {
+                    window.location.href = appleUrl;
+                    setTimeout(() => { window.location.href = webUrl; }, 1200);
+                }
+            }, 1200);
+            window.location.href = gmapsUrl;
+            return;
+        }
+
+        if (isAndroid) {
+            const intentUrl = `intent://maps.google.com/maps?daddr=${destLat},${destLng}&directionsmode=walking#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            try { window.location.href = intentUrl; } catch { window.location.href = webUrl; }
+            return;
+        }
+
         let origin;
         try {
             const pos = await getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
@@ -232,11 +260,8 @@
                 const p = currentMarker.getPosition(); origin = { lat: p.lat(), lng: p.lng() };
             } else { setStatus('Need your current location for directions.'); return; }
         }
-        const destination = { lat: saved.parked.lat, lng: saved.parked.lng };
-
-        directionsService.route({
-            origin, destination, travelMode: google.maps.TravelMode.WALKING
-        }, (result, status) => {
+        const destination = { lat: destLat, lng: destLng };
+        directionsService.route({ origin, destination, travelMode: google.maps.TravelMode.WALKING }, (result, status) => {
             if (status === 'OK' && result) {
                 directionsRenderer.setDirections(result);
                 setStatus('Showing walking route to your car.');
