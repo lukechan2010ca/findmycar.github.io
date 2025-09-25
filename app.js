@@ -249,29 +249,64 @@
     function openInGoogleMapsApp(e) {
         if (e && e.preventDefault) e.preventDefault();
         const saved = readSaved();
-        if (!saved || !saved.parked) { setStatus('No parked location saved yet.'); return; }
+        if (!saved || !saved.parked) { 
+            setStatus('No parked location saved yet.'); 
+            return; 
+        }
+        
         const destLat = saved.parked.lat;
         const destLng = saved.parked.lng;
-
+    
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isAndroid = /Android/.test(navigator.userAgent);
-
+    
         if (isIOS) {
+            // Try Google Maps app first, then Apple Maps as fallback
             const gmapsUrl = `comgooglemaps://?daddr=${destLat},${destLng}&directionsmode=walking`;
-            const universal = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
-            openGmapsLink.setAttribute('href', gmapsUrl);
-            setTimeout(() => { window.location.href = universal; }, 1200);
+            const appleUrl = `maps://?daddr=${destLat},${destLng}&dirflg=w`;
+            
+            // Create a hidden iframe to test if Google Maps app is available
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            // Set a timer to fallback to Apple Maps if Google Maps doesn't respond
+            const fallbackTimer = setTimeout(() => {
+                window.location.href = appleUrl;
+                document.body.removeChild(iframe);
+            }, 2000);
+            
+            // Try to open Google Maps app
+            iframe.src = gmapsUrl;
+            
+            // If we're still here after a short delay, Google Maps opened successfully
+            setTimeout(() => {
+                clearTimeout(fallbackTimer);
+                if (document.body.contains(iframe)) {
+                    document.body.removeChild(iframe);
+                }
+            }, 500);
+            
             return;
         }
-
+    
         if (isAndroid) {
-            const intentUrl = `intent://maps.google.com/maps?daddr=${destLat},${destLng}&directionsmode=walking#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-            try { window.location.href = intentUrl; } catch { window.location.href = `https://maps.google.com/?daddr=${destLat},${destLng}`; }
+            // Use intent URL for Android to force app opening
+            const intentUrl = `intent://maps.google.com/maps?daddr=${destLat},${destLng}&mode=walking#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.google.android.apps.maps;end`;
+            
+            try {
+                window.location.href = intentUrl;
+            } catch (error) {
+                // If intent fails, try the direct app scheme
+                const directUrl = `google.navigation:q=${destLat},${destLng}&mode=w`;
+                window.location.href = directUrl;
+            }
             return;
         }
-
-        // Desktop fallback to web
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`, '_blank');
+    
+        // Desktop or unknown platform - open in new tab
+        const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
+        window.open(webUrl, '_blank');
     }
 
     function clearPhoto() { previewImg.src = ''; previewWrapper.hidden = true; }
